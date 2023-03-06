@@ -1,0 +1,27 @@
+[package]
+name = "rdns"
+version = "0.0.0-git"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.11", default-features = false, features = ["trust-dns", "rustls-tls-webpki-roots", "json"] }
+trust-dns-server = { version = "0.22", default-features = false, features = ["dnssec-ring", "dns-over-https-rustls"] }
+tokio = { version = "1.26", default-features = false, features = ["macros"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+clap = { version = "4.1", features = ["derive", "env"] }
+tracing-subscriber = "0.3"
+async-trait = "0.1"
+tracing = "0.1"
+anyhow = "1.0"
+url = "2.3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# by overriding our dependencies' compilation settings, we can further optimize>
+# https://docs.rust-embedded.org/book/unsorted/speed-vs-size.html#optimizing-de>
+[profile.release.package."*"]
+codegen-units = 1
