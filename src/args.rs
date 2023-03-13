@@ -37,13 +37,16 @@ pub(super) struct Args {
   pub(super) reverse_dns_netbox_token: Option<String>,
 
   #[arg(
-    short,
-    long,
-    env = "RDNS_FORWARDING",
-    num_args(0..),
-    default_value = ".:https:1.1.1.2:443/security.cloudflare-dns.com,https:1.0.0.2:443/security.cloudflare-dns.com,https:[2606:4700:4700::1112]:443/security.cloudflare-dns.com,https:[2606:4700:4700::1002]:443/security.cloudflare-dns.com"
+  short,
+  long,
+  env = "RDNS_FORWARDING",
+  num_args(0..),
+  default_value = ".:https:1.1.1.2:443/security.cloudflare-dns.com,https:1.0.0.2:443/security.cloudflare-dns.com,https:[2606:4700:4700::1112]:443/security.cloudflare-dns.com,https:[2606:4700:4700::1002]:443/security.cloudflare-dns.com"
   )]
   pub(super) forwarding: Vec<Forwarding>,
+
+  #[arg(short, long, env = "RDNS_BLACKLIST", default_value = "false")]
+  pub(super) blacklist: bool,
 }
 
 #[derive(Clone)]

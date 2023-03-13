@@ -13,9 +13,11 @@ use trust_dns_server::ServerFuture;
 
 use crate::args::{Args, UpstreamDns};
 use crate::authority::netbox::{NetboxClient, NetboxIpv4Authority};
+use crate::blacklist::Blacklist;
 
 mod args;
 mod authority;
+mod blacklist;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -91,19 +93,38 @@ async fn main() -> anyhow::Result<()> {
     );
   }
 
-  let mut server = ServerFuture::new(catalog);
+  if args.blacklist {
+    let mut blacklist = Blacklist::new(catalog);
+    blacklist.update().await?;
 
-  for addr in args.udp_listen_addr {
-    info!("Listening on {}/udp", addr);
-    server.register_socket(UdpSocket::bind(addr).await?);
-  }
+    let mut server = ServerFuture::new(blacklist);
 
-  for addr in args.tcp_listen_addr {
-    info!("Listening on {}/tcp", addr);
-    server.register_listener(TcpListener::bind(addr).await?, Duration::from_secs(10));
-  }
+    for addr in args.udp_listen_addr {
+      info!("Listening on {}/udp", addr);
+      server.register_socket(UdpSocket::bind(addr).await?);
+    }
 
-  server.block_until_done().await?;
+    for addr in args.tcp_listen_addr {
+      info!("Listening on {}/tcp", addr);
+      server.register_listener(TcpListener::bind(addr).await?, Duration::from_secs(10));
+    }
+
+    server.block_until_done().await?;
+  } else {
+    let mut server = ServerFuture::new(catalog);
+
+    for addr in args.udp_listen_addr {
+      info!("Listening on {}/udp", addr);
+      server.register_socket(UdpSocket::bind(addr).await?);
+    }
+
+    for addr in args.tcp_listen_addr {
+      info!("Listening on {}/tcp", addr);
+      server.register_listener(TcpListener::bind(addr).await?, Duration::from_secs(10));
+    }
+
+    server.block_until_done().await?;
+  };
 
   Ok(())
 }

@@ -1,5 +1,4 @@
-FROM rust:latest AS builder
-ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+FROM debian:bullseye-slim AS builder
 
 ENV USER=rdns
 ENV UID=10001
@@ -13,19 +12,9 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-WORKDIR /rdns
-COPY Cargo.toml Cargo.lock ./
-
-RUN mkdir src \
- && echo "fn main() { println!(\"Docker placeholder main.rs\"); }" > src/main.rs \
- && cargo build --release \
- && rm -rf target/release/deps/rdns*
-
-COPY src ./src
-
-RUN cargo build --release
-
 FROM gcr.io/distroless/cc
+
+ARG TARGETPLATFORM
 
 EXPOSE 53/tcp
 EXPOSE 53/udp
@@ -34,7 +23,7 @@ COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 
 WORKDIR /rdns
-COPY --from=builder /rdns/target/release/rdns ./rdns
+COPY ./${TARGETPLATFORM}/rdns ./rdns
 
 USER rdns:rdns
 
