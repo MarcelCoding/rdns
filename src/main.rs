@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use clap::Parser;
 use tokio::net::{TcpListener, UdpSocket};
-use tracing::info;
+use tokio::time::sleep;
+use tracing::{error, info};
 use trust_dns_server::authority::{Authority, Catalog, ZoneType};
 use trust_dns_server::client::rr::LowerName;
 use trust_dns_server::resolver::config::{NameServerConfig, NameServerConfigGroup, Protocol};
@@ -14,10 +15,12 @@ use trust_dns_server::ServerFuture;
 use crate::args::{Args, UpstreamDns};
 use crate::authority::netbox::{NetboxClient, NetboxIpv4Authority};
 use crate::blacklist::Blacklist;
+use crate::stats::Stats;
 
 mod args;
 mod authority;
 mod blacklist;
+mod stats;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -94,10 +97,19 @@ async fn main() -> anyhow::Result<()> {
   }
 
   if args.blacklist {
-    let mut blacklist = Blacklist::new(catalog);
+    let mut blacklist = Blacklist::new();
     blacklist.update().await?;
 
-    let mut server = ServerFuture::new(blacklist);
+    let stats = Stats::new(
+      args.stats_url.as_ref().unwrap(),
+      args.stats_bucket.unwrap(),
+      args.stats_org.unwrap(),
+      args.stats_token.as_ref().unwrap(),
+      catalog,
+      blacklist,
+    );
+
+    let mut server = ServerFuture::new(stats.clone());
 
     for addr in args.udp_listen_addr {
       info!("Listening on {}/udp", addr);
@@ -108,6 +120,15 @@ async fn main() -> anyhow::Result<()> {
       info!("Listening on {}/tcp", addr);
       server.register_listener(TcpListener::bind(addr).await?, Duration::from_secs(10));
     }
+
+    tokio::spawn(async move {
+      loop {
+        if let Err(err) = stats.flush().await {
+          error!("Error: {}", err);
+        }
+        sleep(Duration::from_secs(10)).await;
+      }
+    });
 
     server.block_until_done().await?;
   } else {

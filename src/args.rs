@@ -45,8 +45,17 @@ pub(super) struct Args {
   )]
   pub(super) forwarding: Vec<Forwarding>,
 
-  #[arg(short, long, env = "RDNS_BLACKLIST", default_value = "false")]
+  #[arg(short, long, env = "RDNS_BLACKLIST")]
   pub(super) blacklist: bool,
+
+  #[arg(long, env = "RDNS_STATS_URL", requires = "stats_token")]
+  pub(crate) stats_url: Option<Url>,
+  #[arg(long, env = "RDNS_STATS_TOKEN", requires = "stats_bucket")]
+  pub(crate) stats_token: Option<String>,
+  #[arg(    long,    env = "RDNS_STATS_BUCKET",      requires = "stats_org"  )]
+  pub(crate) stats_bucket: Option<String>,
+  #[arg(long, env = "RDNS_STATS_ORG", requires = "stats_url")]
+  pub(crate) stats_org: Option<String>,
 }
 
 #[derive(Clone)]

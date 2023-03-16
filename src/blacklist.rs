@@ -10,22 +10,17 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::task::JoinSet;
 use tokio_util::io::StreamReader;
 use tracing::{error, info};
-use trust_dns_server::authority::MessageResponseBuilder;
 use trust_dns_server::client::rr::LowerName;
-use trust_dns_server::proto::op::ResponseCode;
-use trust_dns_server::server::{Request, RequestHandler, ResponseHandler, ResponseInfo};
 use url::Url;
 
-pub(crate) struct Blacklist<D> {
-  delegate: D,
+pub(crate) struct Blacklist {
   blacklist: Vec<u64>,
   sources: HashSet<Url>,
 }
 
-impl<D: RequestHandler> Blacklist<D> {
-  pub(crate) fn new(delegate: D) -> Self {
+impl Blacklist {
+  pub(crate) fn new() -> Self {
     Self {
-      delegate,
       blacklist: Vec::default(),
       sources: HashSet::from_iter(vec![
         Url::parse("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/multi.txt").unwrap(),
@@ -126,7 +121,7 @@ impl<D: RequestHandler> Blacklist<D> {
       let source = source.clone();
       let client = client.clone();
 
-      join_set.spawn(Blacklist::<D>::update_source(client, source));
+      join_set.spawn(Blacklist::update_source(client, source));
       tokio::time::sleep(Duration::from_millis(5)).await;
     }
 
@@ -220,7 +215,7 @@ impl<D: RequestHandler> Blacklist<D> {
     Ok(hashes)
   }
 
-  fn is_blocked(&self, qname: &LowerName) -> bool {
+  pub(crate) fn is_blocked(&self, qname: &LowerName) -> bool {
     let mut hasher = FnvHasher::default();
 
     let string = qname.to_string();
@@ -230,30 +225,5 @@ impl<D: RequestHandler> Blacklist<D> {
     let i = hasher.finish();
 
     self.blacklist.binary_search(&i).is_ok()
-  }
-}
-
-#[async_trait::async_trait]
-impl<D: RequestHandler> RequestHandler for Blacklist<D> {
-  async fn handle_request<R: ResponseHandler>(
-    &self,
-    request: &Request,
-    mut response_handle: R,
-  ) -> ResponseInfo {
-    let query = request.query();
-
-    if self.is_blocked(query.name()) {
-      let builder = MessageResponseBuilder::from_message_request(request);
-
-      match response_handle
-        .send_response(builder.error_msg(request.header(), ResponseCode::NXDomain))
-        .await
-      {
-        Ok(resp) => return resp,
-        Err(err) => todo!("{:?}", err),
-      }
-    }
-
-    self.delegate.handle_request(request, response_handle).await
   }
 }
