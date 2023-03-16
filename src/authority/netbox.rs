@@ -26,7 +26,6 @@ struct IpAddress {
 
 #[derive(Deserialize)]
 struct AssignedObject {
-  name: String,
   virtual_machine: Option<VirtualMachine>,
   device: Option<Device>,
 }
@@ -91,11 +90,7 @@ impl NetboxClient {
         })
         .expect("can't be");
 
-      names.push(LowerName::from_str(&format!(
-        "{}_.{}",
-        result.assigned_object.name.replace('.', "vlan"),
-        name
-      ))?);
+      names.push(LowerName::from_str(&name)?);
     }
 
     Ok(names)
