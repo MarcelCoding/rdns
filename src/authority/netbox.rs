@@ -10,7 +10,8 @@ use trust_dns_server::authority::{
   AuthorityObject, LookupError, LookupObject, LookupOptions, LookupRecords, MessageRequest,
   UpdateResult, ZoneType,
 };
-use trust_dns_server::client::rr::{IntoName, LowerName, RData, Record, RecordSet, RecordType};
+use trust_dns_server::proto::rr::{LowerName, RData, Record, RecordSet, RecordType};
+use trust_dns_server::resolver::IntoName;
 use trust_dns_server::server::RequestInfo;
 use url::Url;
 

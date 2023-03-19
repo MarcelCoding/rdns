@@ -4,15 +4,15 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
-use flate2::Compression;
 use flate2::write::GzEncoder;
-use reqwest::{Client, Url};
+use flate2::Compression;
 use reqwest::header::{AUTHORIZATION, CONTENT_ENCODING};
+use reqwest::{Client, Url};
 use serde::Serialize;
 use tokio::sync::Mutex;
 use trust_dns_server::authority::MessageResponseBuilder;
-use trust_dns_server::client::op::ResponseCode;
-use trust_dns_server::client::rr::{LowerName, RecordType};
+use trust_dns_server::proto::op::ResponseCode;
+use trust_dns_server::proto::rr::{LowerName, RecordType};
 use trust_dns_server::server::{Protocol, Request, RequestHandler, ResponseHandler, ResponseInfo};
 
 use crate::blacklist::Blacklist;
@@ -81,7 +81,11 @@ impl Entry {
       self.protocol,
       self.query,
       self.query_type,
-      if self.blocked { "Blocked".to_string() } else { self.response_code.to_str().replace(' ', "\\ ") },
+      if self.blocked {
+        "Blocked".to_string()
+      } else {
+        self.response_code.to_str().replace(' ', "\\ ")
+      },
       self.blocked,
       self.duration.as_millis(),
       timestamp

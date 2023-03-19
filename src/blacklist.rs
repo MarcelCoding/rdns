@@ -10,7 +10,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::task::JoinSet;
 use tokio_util::io::StreamReader;
 use tracing::{error, info};
-use trust_dns_server::client::rr::LowerName;
+use trust_dns_server::proto::rr::LowerName;
 use url::Url;
 
 pub(crate) struct Blacklist {

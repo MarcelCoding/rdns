@@ -52,7 +52,7 @@ pub(super) struct Args {
   pub(crate) stats_url: Option<Url>,
   #[arg(long, env = "RDNS_STATS_TOKEN", requires = "stats_bucket")]
   pub(crate) stats_token: Option<String>,
-  #[arg(    long,    env = "RDNS_STATS_BUCKET",      requires = "stats_org"  )]
+  #[arg(long, env = "RDNS_STATS_BUCKET", requires = "stats_org")]
   pub(crate) stats_bucket: Option<String>,
   #[arg(long, env = "RDNS_STATS_ORG", requires = "stats_url")]
   pub(crate) stats_org: Option<String>,
